@@ -1,0 +1,227 @@
+import React, { useEffect, useState, useCallback } from 'react'
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  ActivityIndicator,
+  StatusBar,
+} from 'react-native'
+import { useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { RootStackParams } from '../navigation'
+import { getGames, mapApiGameListItem } from '../services/api'
+import type { Game } from '../types/games'
+import GameCard from '../components/GameCard'
+import SearchBar from '../components/SearchBar'
+import { useApp } from '../context/AppContext'
+import AuthModal from '../components/AuthModal'
+
+type HomeNavProp = StackNavigationProp<RootStackParams>
+
+export default function HomeScreen() {
+  const navigation = useNavigation<HomeNavProp>()
+  const { addToCartLocal, authUser, handleAuthSuccess, handleSignOut } = useApp()
+  const [games, setGames] = useState<Game[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searching, setSearching] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+
+  useEffect(() => {
+    getGames('', [], 1, 20)
+      .then(page => setGames(page.items.map(mapApiGameListItem)))
+      .catch(() => setError('No se pudieron cargar los juegos.'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearching(false)
+      getGames('', [], 1, 20)
+        .then(page => setGames(page.items.map(mapApiGameListItem)))
+        .catch(() => {})
+      return
+    }
+    setSearching(true)
+    try {
+      const page = await getGames(query, [], 1, 20)
+      setGames(page.items.map(mapApiGameListItem))
+    } catch {
+      setGames([])
+    } finally {
+      setSearching(false)
+    }
+  }, [])
+
+  const handleSelectGame = useCallback((game: Game) => {
+    navigation.navigate('GameDetail', { game })
+  }, [navigation])
+
+  const hero = games[0]
+
+  const renderHeader = () => (
+    <>
+      <View style={styles.appBar}>
+        <Text style={styles.logo}>IndieGames</Text>
+        {authUser ? (
+          <View style={styles.authRow}>
+            <Text style={styles.authName}>{authUser.username}</Text>
+            <TouchableOpacity onPress={handleSignOut}>
+              <Text style={styles.authBtn}>Salir</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => setAuthModalOpen(true)}>
+            <Text style={styles.authBtn}>Sign In</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <SearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        onSearch={handleSearch}
+      />
+
+      {hero && !searching && (
+        <TouchableOpacity style={styles.hero} onPress={() => handleSelectGame(hero)} activeOpacity={0.9}>
+          <Image source={{ uri: hero.image }} style={styles.heroImage} resizeMode="cover" />
+          <View style={styles.heroOverlay}>
+            <Text style={styles.heroTitle}>{hero.title}</Text>
+            {hero.genres.length > 0 && (
+              <Text style={styles.heroGenres}>{hero.genres.join(' · ')}</Text>
+            )}
+            <View style={styles.heroActions}>
+              <TouchableOpacity style={styles.heroBtnPrimary} onPress={() => handleSelectGame(hero)}>
+                <Text style={styles.heroBtnTxt}>Ver detalles</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.heroBtnSecondary} onPress={() => addToCartLocal(hero)}>
+                <Text style={styles.heroBtnOutlineTxt}>+ Carrito</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      <Text style={styles.sectionTitle}>
+        {searching ? 'Buscando...' : 'Juegos disponibles'}
+      </Text>
+    </>
+  )
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator color="#6bb8e8" size="large" />
+      </SafeAreaView>
+    )
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Text style={styles.errorTxt}>{error}</Text>
+      </SafeAreaView>
+    )
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1b1b1b" />
+      <FlatList
+        data={games}
+        keyExtractor={g => g.id}
+        numColumns={2}
+        ListHeaderComponent={renderHeader}
+        renderItem={({ item }) => (
+          <GameCard
+            game={item}
+            onPress={handleSelectGame}
+            onAddToCart={addToCartLocal}
+          />
+        )}
+        contentContainerStyle={styles.list}
+        columnWrapperStyle={styles.row}
+        showsVerticalScrollIndicator={false}
+      />
+      <AuthModal
+        visible={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onAuthSuccess={user => { handleAuthSuccess(user); setAuthModalOpen(false) }}
+      />
+    </SafeAreaView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#1b1b1b' },
+  centered: { flex: 1, backgroundColor: '#1b1b1b', justifyContent: 'center', alignItems: 'center' },
+  errorTxt: { color: '#f44', fontSize: 14 },
+  appBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2d2d2d',
+  },
+  logo: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  authRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  authName: { color: '#aaa', fontSize: 13 },
+  authBtn: {
+    color: '#e0e0e0',
+    fontSize: 13,
+    borderWidth: 1,
+    borderColor: '#555',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  hero: {
+    margin: 12,
+    borderRadius: 10,
+    overflow: 'hidden',
+    height: 200,
+  },
+  heroImage: { width: '100%', height: '100%', position: 'absolute' },
+  heroOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+    padding: 16,
+  },
+  heroTitle: { color: '#fff', fontSize: 22, fontWeight: '700', marginBottom: 4 },
+  heroGenres: { color: '#ccc', fontSize: 12, marginBottom: 12 },
+  heroActions: { flexDirection: 'row', gap: 10 },
+  heroBtnPrimary: {
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  heroBtnTxt: { color: '#1b1b1b', fontWeight: '600', fontSize: 13 },
+  heroBtnSecondary: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  heroBtnOutlineTxt: { color: '#e0e0e0', fontSize: 13 },
+  sectionTitle: {
+    color: '#e0e0e0',
+    fontSize: 16,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  list: { paddingHorizontal: 6, paddingBottom: 20 },
+  row: { marginHorizontal: 0 },
+})
