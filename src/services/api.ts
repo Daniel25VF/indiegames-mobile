@@ -1,4 +1,4 @@
-const BASE_URL = "http://192.168.17.17:5239"
+const BASE_URL = "http://10.0.2.2:5239"
 
 // --- Auth token ---
 

@@ -6,10 +6,10 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   StatusBar,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { RootStackParams } from '../navigation'
@@ -29,7 +29,6 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [searching, setSearching] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
 
   useEffect(() => {
@@ -39,24 +38,10 @@ export default function HomeScreen() {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setSearching(false)
-      getGames('', [], 1, 20)
-        .then(page => setGames(page.items.map(mapApiGameListItem)))
-        .catch(() => {})
-      return
-    }
-    setSearching(true)
-    try {
-      const page = await getGames(query, [], 1, 20)
-      setGames(page.items.map(mapApiGameListItem))
-    } catch {
-      setGames([])
-    } finally {
-      setSearching(false)
-    }
-  }, [])
+  const handleSearch = useCallback((query: string) => {
+    if (!query.trim()) return
+    navigation.navigate('SearchResults', { query: query.trim() })
+  }, [navigation])
 
   const handleSelectGame = useCallback((game: Game) => {
     navigation.navigate('GameDetail', { game })
@@ -64,8 +49,64 @@ export default function HomeScreen() {
 
   const hero = games[0]
 
-  const renderHeader = () => (
-    <>
+const renderBody = () => {
+    if (loading) {
+      return (
+        <View style={styles.centered}>
+          <ActivityIndicator color="#6bb8e8" size="large" />
+        </View>
+      )
+    }
+    if (error) {
+      return (
+        <View style={styles.centered}>
+          <Text style={styles.errorTxt}>{error}</Text>
+        </View>
+      )
+    }
+    return (
+      <FlatList
+        data={games}
+        keyExtractor={g => g.id}
+        numColumns={2}
+        ListHeaderComponent={
+          <>
+            <SearchBar value={searchQuery} onChange={setSearchQuery} onSearch={handleSearch} />
+            {hero && (
+              <TouchableOpacity style={styles.hero} onPress={() => handleSelectGame(hero)} activeOpacity={0.9}>
+                <Image source={{ uri: hero.image }} style={styles.heroImage} resizeMode="cover" />
+                <View style={styles.heroOverlay}>
+                  <Text style={styles.heroTitle}>{hero.title}</Text>
+                  {hero.genres.length > 0 && (
+                    <Text style={styles.heroGenres}>{hero.genres.join(' · ')}</Text>
+                  )}
+                  <View style={styles.heroActions}>
+                    <TouchableOpacity style={styles.heroBtnPrimary} onPress={() => handleSelectGame(hero)}>
+                      <Text style={styles.heroBtnTxt}>Ver detalles</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.heroBtnSecondary} onPress={() => addToCartLocal(hero)}>
+                      <Text style={styles.heroBtnOutlineTxt}>+ Carrito</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+            <Text style={styles.sectionTitle}>Juegos disponibles</Text>
+          </>
+        }
+        renderItem={({ item }) => (
+          <GameCard game={item} onPress={handleSelectGame} onAddToCart={addToCartLocal} />
+        )}
+        contentContainerStyle={styles.list}
+        columnWrapperStyle={styles.row}
+        showsVerticalScrollIndicator={false}
+      />
+    )
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#1b1b1b" />
       <View style={styles.appBar}>
         <Text style={styles.logo}>IndieGames</Text>
         {authUser ? (
@@ -81,74 +122,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
       </View>
-
-      <SearchBar
-        value={searchQuery}
-        onChange={setSearchQuery}
-        onSearch={handleSearch}
-      />
-
-      {hero && !searching && (
-        <TouchableOpacity style={styles.hero} onPress={() => handleSelectGame(hero)} activeOpacity={0.9}>
-          <Image source={{ uri: hero.image }} style={styles.heroImage} resizeMode="cover" />
-          <View style={styles.heroOverlay}>
-            <Text style={styles.heroTitle}>{hero.title}</Text>
-            {hero.genres.length > 0 && (
-              <Text style={styles.heroGenres}>{hero.genres.join(' · ')}</Text>
-            )}
-            <View style={styles.heroActions}>
-              <TouchableOpacity style={styles.heroBtnPrimary} onPress={() => handleSelectGame(hero)}>
-                <Text style={styles.heroBtnTxt}>Ver detalles</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.heroBtnSecondary} onPress={() => addToCartLocal(hero)}>
-                <Text style={styles.heroBtnOutlineTxt}>+ Carrito</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      <Text style={styles.sectionTitle}>
-        {searching ? 'Buscando...' : 'Juegos disponibles'}
-      </Text>
-    </>
-  )
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.centered}>
-        <ActivityIndicator color="#6bb8e8" size="large" />
-      </SafeAreaView>
-    )
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.centered}>
-        <Text style={styles.errorTxt}>{error}</Text>
-      </SafeAreaView>
-    )
-  }
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1b1b1b" />
-      <FlatList
-        data={games}
-        keyExtractor={g => g.id}
-        numColumns={2}
-        ListHeaderComponent={renderHeader}
-        renderItem={({ item }) => (
-          <GameCard
-            game={item}
-            onPress={handleSelectGame}
-            onAddToCart={addToCartLocal}
-          />
-        )}
-        contentContainerStyle={styles.list}
-        columnWrapperStyle={styles.row}
-        showsVerticalScrollIndicator={false}
-      />
+      {renderBody()}
       <AuthModal
         visible={authModalOpen}
         onClose={() => setAuthModalOpen(false)}

@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Modal,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useApp } from '../context/AppContext'
 
 interface Friend {
@@ -92,18 +92,11 @@ export default function ProfileScreen() {
           <View style={styles.avatar} />
           <View style={styles.profileInfo}>
             <Text style={styles.username}>{authUser?.username ?? 'Invitado'}</Text>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelTxt}>NIVEL 46</Text>
-            </View>
           </View>
         </View>
 
         {/* Stats */}
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statTitle}>HORAS JUGADAS</Text>
-            <View style={styles.statPlaceholder} />
-          </View>
           <View style={styles.statCard}>
             <View style={styles.statHeader}>
               <Text style={styles.statTitle}>LOGROS</Text>

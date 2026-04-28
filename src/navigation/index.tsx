@@ -5,7 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack'
 import { Text } from 'react-native'
 import HomeScreen from '../screens/HomeScreen'
 import GameDetailScreen from '../screens/GameDetailScreen'
-import LibraryScreen from '../screens/LibraryScreen'
+import SearchResultsScreen from '../screens/SearchResultsScreen'
 import CartScreen from '../screens/CartScreen'
 import ProfileScreen from '../screens/ProfileScreen'
 import type { Game } from '../types/games'
@@ -13,11 +13,11 @@ import type { Game } from '../types/games'
 export type RootStackParams = {
   MainTabs: undefined
   GameDetail: { game: Game }
+  SearchResults: { query: string }
 }
 
 export type TabParams = {
   Home: undefined
-  Library: undefined
   Cart: { cartCount: number }
   Profile: undefined
 }
@@ -27,7 +27,6 @@ const Tab = createBottomTabNavigator<TabParams>()
 
 const TAB_ICON: Record<string, string> = {
   Home: '🏠',
-  Library: '📚',
   Cart: '🛒',
   Profile: '👤',
 }
@@ -56,7 +55,6 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio' }} />
-      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Biblioteca' }} />
       <Tab.Screen name="Cart" component={CartScreen} options={{ title: 'Carrito' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />
     </Tab.Navigator>
@@ -71,6 +69,11 @@ export default function Navigation() {
         <Stack.Screen
           name="GameDetail"
           component={GameDetailScreen}
+          options={{ presentation: 'card' }}
+        />
+        <Stack.Screen
+          name="SearchResults"
+          component={SearchResultsScreen}
           options={{ presentation: 'card' }}
         />
       </Stack.Navigator>

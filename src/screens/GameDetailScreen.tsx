@@ -6,11 +6,11 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   StatusBar,
   ActivityIndicator,
 } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import type { StackScreenProps } from '@react-navigation/stack'
 import type { RootStackParams } from '../navigation'
 import { getGameById, mapApiGame } from '../services/api'
@@ -24,7 +24,6 @@ export default function GameDetailScreen({ route, navigation }: Props) {
   const [game, setGame] = useState<Game>(initialGame)
   const [loadingDetail, setLoadingDetail] = useState(true)
   const [slideIndex, setSlideIndex] = useState(0)
-  const [wishlisted, setWishlisted] = useState(false)
   const { cartItems, addToCartLocal } = useApp()
 
   const inCart = cartItems.some(g => g.id === game.id)
@@ -125,14 +124,6 @@ export default function GameDetailScreen({ route, navigation }: Props) {
             >
               <Text style={[styles.buyBtnTxt, inCart && styles.buyBtnInCartTxt]}>
                 {inCart ? 'En el carrito ✓' : 'Añadir al carrito'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.wishlistBtn, wishlisted && styles.wishlistBtnActive]}
-              onPress={() => setWishlisted(w => !w)}
-            >
-              <Text style={styles.wishlistTxt}>
-                {wishlisted ? '✓ En lista de deseados' : '+ Lista de deseados'}
               </Text>
             </TouchableOpacity>
           </View>
