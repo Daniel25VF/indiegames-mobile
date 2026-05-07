@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+﻿import React, { useEffect, useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -13,8 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { RootStackParams } from '../navigation'
-import { getGames, mapApiGameListItem } from '../services/api'
-import type { Game } from '../types/games'
+import { getGames, mapApiGameListItem } from '@shared/services/api'
+import type { Game } from '@shared/types/games'
 import GameCard from '../components/GameCard'
 import SearchBar from '../components/SearchBar'
 import { useApp } from '../context/AppContext'
@@ -53,7 +53,7 @@ const renderBody = () => {
     if (loading) {
       return (
         <View style={styles.centered}>
-          <ActivityIndicator color="#6bb8e8" size="large" />
+          <ActivityIndicator color="#4a9eff" size="large" />
         </View>
       )
     }
@@ -106,7 +106,7 @@ const renderBody = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1b1b1b" />
+      <StatusBar barStyle="light-content" backgroundColor="#07070f" />
       <View style={styles.appBar}>
         <Text style={styles.logo}>IndieGames</Text>
         {authUser ? (
@@ -133,8 +133,8 @@ const renderBody = () => {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1b1b1b' },
-  centered: { flex: 1, backgroundColor: '#1b1b1b', justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: '#07070f' },
+  centered: { flex: 1, backgroundColor: '#07070f', justifyContent: 'center', alignItems: 'center' },
   errorTxt: { color: '#f44', fontSize: 14 },
   appBar: {
     flexDirection: 'row',
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2d2d2d',
+    borderBottomColor: '#14142a',
   },
   logo: { color: '#fff', fontWeight: '700', fontSize: 16 },
   authRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     color: '#e0e0e0',
     fontSize: 13,
     borderWidth: 1,
-    borderColor: '#555',
+    borderColor: '#303060',
     borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -174,20 +174,20 @@ const styles = StyleSheet.create({
   heroGenres: { color: '#ccc', fontSize: 12, marginBottom: 12 },
   heroActions: { flexDirection: 'row', gap: 10 },
   heroBtnPrimary: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#1a6fff',
     borderRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
-  heroBtnTxt: { color: '#1b1b1b', fontWeight: '600', fontSize: 13 },
+  heroBtnTxt: { color: '#fff', fontWeight: '600', fontSize: 13 },
   heroBtnSecondary: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#4a9eff',
     borderRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
-  heroBtnOutlineTxt: { color: '#e0e0e0', fontSize: 13 },
+  heroBtnOutlineTxt: { color: '#4a9eff', fontSize: 13 },
   sectionTitle: {
     color: '#e0e0e0',
     fontSize: 16,

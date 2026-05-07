@@ -13,9 +13,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import type { StackScreenProps } from '@react-navigation/stack'
 import type { RootStackParams } from '../navigation'
-import { getGameById, mapApiGame } from '../services/api'
-import type { Game } from '../types/games'
+import { getGameById, mapApiGame, getGameAchievements, type AchievementResponse } from '@shared/services/api'
+import type { Game } from '@shared/types/games'
 import { useApp } from '../context/AppContext'
+import ReportModal from '../components/ReportModal'
 
 type Props = StackScreenProps<RootStackParams, 'GameDetail'>
 
@@ -24,7 +25,11 @@ export default function GameDetailScreen({ route, navigation }: Props) {
   const [game, setGame] = useState<Game>(initialGame)
   const [loadingDetail, setLoadingDetail] = useState(true)
   const [slideIndex, setSlideIndex] = useState(0)
-  const { cartItems, addToCartLocal } = useApp()
+  const { cartItems, addToCartLocal, authUser } = useApp()
+  const [reportVisible, setReportVisible] = useState(false)
+
+  const [achievements, setAchievements] = useState<AchievementResponse[]>([])
+  const [loadingAchievements, setLoadingAchievements] = useState(false)
 
   const inCart = cartItems.some(g => g.id === game.id)
 
@@ -35,6 +40,14 @@ export default function GameDetailScreen({ route, navigation }: Props) {
       .finally(() => setLoadingDetail(false))
   }, [initialGame.id])
 
+  useEffect(() => {
+    setLoadingAchievements(true)
+    getGameAchievements(initialGame.id)
+      .then(res => setAchievements(res.items))
+      .catch(() => {})
+      .finally(() => setLoadingAchievements(false))
+  }, [initialGame.id])
+
   const screenshots = game.screenshots && game.screenshots.length > 0
     ? game.screenshots
     : [game.image]
@@ -43,9 +56,11 @@ export default function GameDetailScreen({ route, navigation }: Props) {
     ? Math.round((1 - game.price / game.oldPrice) * 100)
     : null
 
+  const unlockedCount = achievements.filter(a => a.isUnlocked).length
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#1b1b1b" />
+      <StatusBar barStyle="light-content" backgroundColor="#07070f" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -136,6 +151,38 @@ export default function GameDetailScreen({ route, navigation }: Props) {
             </View>
           )}
 
+          {/* Achievements */}
+          <View style={styles.section}>
+            <View style={styles.achievementsHeader}>
+              <Text style={styles.sectionTitle}>Logros</Text>
+              {authUser && achievements.length > 0 && (
+                <Text style={styles.achievementsCount}>
+                  {unlockedCount}/{achievements.length}
+                </Text>
+              )}
+            </View>
+
+            {loadingAchievements ? (
+              <ActivityIndicator color="#4a9eff" style={{ marginTop: 8 }} />
+            ) : achievements.length === 0 ? (
+              <Text style={styles.emptyTxt}>Este juego no tiene logros.</Text>
+            ) : (
+              achievements.map(a => (
+                <View key={a.id} style={styles.achievementRow}>
+                  <Text style={styles.achievementIcon}>
+                    {a.isUnlocked === true ? '🏆' : a.isUnlocked === false ? '🔒' : '🏆'}
+                  </Text>
+                  <View style={styles.achievementInfo}>
+                    <Text style={[styles.achievementName, a.isUnlocked === false && styles.achievementLocked]}>
+                      {a.name}
+                    </Text>
+                    <Text style={styles.achievementDesc}>{a.description}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+
           {/* Info */}
           <View style={styles.metaBox}>
             <View style={styles.metaRow}>
@@ -148,14 +195,28 @@ export default function GameDetailScreen({ route, navigation }: Props) {
             </View>
           </View>
 
+          {/* Report */}
+          <TouchableOpacity style={styles.reportBtn} onPress={() => setReportVisible(true)}>
+            <Text style={styles.reportTxt}>Denunciar este juego</Text>
+          </TouchableOpacity>
+
         </View>
       </ScrollView>
+
+      <ReportModal
+        visible={reportVisible}
+        gameName={game.title}
+        onClose={() => setReportVisible(false)}
+        onSubmit={(reason, description) => {
+          console.log('[Report]', { gameId: game.id, reason, description })
+        }}
+      />
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1b1b1b' },
+  container: { flex: 1, backgroundColor: '#07070f' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -163,10 +224,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2d2d2d',
+    borderBottomColor: '#14142a',
   },
   backBtn: { paddingVertical: 4 },
-  backTxt: { color: '#6bb8e8', fontSize: 14 },
+  backTxt: { color: '#4a9eff', fontSize: 14 },
   headerTitle: { flex: 1, color: '#fff', fontWeight: '600', fontSize: 15 },
   carouselWrapper: { height: 220, backgroundColor: '#000' },
   carouselLoading: {
@@ -190,19 +251,19 @@ const styles = StyleSheet.create({
   dotActive: { backgroundColor: '#fff' },
   body: { padding: 16, gap: 16 },
   title: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  developer: { color: '#6bb8e8', fontSize: 13 },
+  developer: { color: '#4a9eff', fontSize: 13 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tag: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#0f0f20',
     borderWidth: 1,
-    borderColor: '#3a3a3a',
+    borderColor: '#1c1c38',
     borderRadius: 3,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   tagTxt: { color: '#aaa', fontSize: 11 },
   purchaseBox: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#0f0f20',
     borderRadius: 8,
     padding: 16,
     gap: 12,
@@ -226,24 +287,38 @@ const styles = StyleSheet.create({
   buyBtnInCart: { backgroundColor: '#2a3a1a' },
   buyBtnTxt: { color: '#a4d007', fontWeight: '700', fontSize: 14 },
   buyBtnInCartTxt: { color: '#6a9a30' },
-  wishlistBtn: {
-    backgroundColor: '#4a6fa5',
-    borderRadius: 4,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  wishlistBtnActive: { backgroundColor: '#2d5080' },
-  wishlistTxt: { color: '#fff', fontSize: 13, fontWeight: '600' },
   section: { gap: 8 },
   sectionTitle: { color: '#aaa', fontSize: 12, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
   description: { color: '#ccc', fontSize: 13, lineHeight: 20 },
+  achievementsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  achievementsCount: { color: '#4a9eff', fontSize: 12, fontWeight: '600' },
+  achievementRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#14142a',
+  },
+  achievementIcon: { fontSize: 22, lineHeight: 28 },
+  achievementInfo: { flex: 1, gap: 2 },
+  achievementName: { color: '#e0e0e0', fontSize: 13, fontWeight: '600' },
+  achievementLocked: { color: '#666' },
+  achievementDesc: { color: '#888', fontSize: 12 },
+  emptyTxt: { color: '#666', fontSize: 13 },
   metaBox: {
     borderTopWidth: 1,
-    borderTopColor: '#2d2d2d',
+    borderTopColor: '#14142a',
     paddingTop: 14,
     gap: 10,
   },
   metaRow: { gap: 2 },
   metaLabel: { color: '#666', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   metaValue: { color: '#ccc', fontSize: 12 },
+  reportBtn: { alignItems: 'center', paddingVertical: 8 },
+  reportTxt: { color: '#666', fontSize: 12, textDecorationLine: 'underline' },
 })

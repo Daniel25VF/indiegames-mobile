@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import {
   Modal,
   View,
@@ -11,8 +11,8 @@ import {
   Platform,
   ScrollView,
 } from 'react-native'
-import { login, register, confirmRegister } from '../services/auth'
-import type { AuthUser } from '../services/auth'
+import { login, register, confirmRegister } from '@shared/services/auth'
+import type { AuthUser } from '@shared/services/auth'
 
 type Mode = 'signin' | 'register'
 

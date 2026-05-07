@@ -1,14 +1,14 @@
-import React from 'react'
+﻿import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createStackNavigator } from '@react-navigation/stack'
-import { Text } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import HomeScreen from '../screens/HomeScreen'
 import GameDetailScreen from '../screens/GameDetailScreen'
 import SearchResultsScreen from '../screens/SearchResultsScreen'
 import CartScreen from '../screens/CartScreen'
 import ProfileScreen from '../screens/ProfileScreen'
-import type { Game } from '../types/games'
+import type { Game } from '@shared/types/games'
 
 export type RootStackParams = {
   MainTabs: undefined
@@ -25,18 +25,12 @@ export type TabParams = {
 const Stack = createStackNavigator<RootStackParams>()
 const Tab = createBottomTabNavigator<TabParams>()
 
-const TAB_ICON: Record<string, string> = {
-  Home: '🏠',
-  Cart: '🛒',
-  Profile: '👤',
-}
+type IoniconName = React.ComponentProps<typeof Ionicons>['name']
 
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  return (
-    <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>
-      {TAB_ICON[name]}
-    </Text>
-  )
+const TAB_ICON: Record<string, { active: IoniconName; inactive: IoniconName }> = {
+  Home:    { active: 'home',         inactive: 'home-outline' },
+  Cart:    { active: 'bag',          inactive: 'bag-outline' },
+  Profile: { active: 'person',       inactive: 'person-outline' },
 }
 
 function MainTabs() {
@@ -45,13 +39,16 @@ function MainTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1b1b1b',
-          borderTopColor: '#2d2d2d',
+          backgroundColor: '#07070f',
+          borderTopColor: '#14142a',
         },
-        tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: '#666',
+        tabBarActiveTintColor: '#4a9eff',
+        tabBarInactiveTintColor: '#555',
         tabBarLabelStyle: { fontSize: 11 },
-        tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons = TAB_ICON[route.name]
+          return <Ionicons name={focused ? icons.active : icons.inactive} size={size} color={color} />
+        },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio' }} />

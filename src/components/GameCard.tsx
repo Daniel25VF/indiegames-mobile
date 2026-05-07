@@ -1,6 +1,6 @@
-import React from 'react'
+﻿import React from 'react'
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native'
-import type { Game } from '../types/games'
+import type { Game } from '@shared/types/games'
 
 interface GameCardProps {
   game: Game
@@ -44,7 +44,7 @@ export default function GameCard({ game, onPress, onAddToCart }: GameCardProps) 
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#0f0f20',
     borderRadius: 8,
     overflow: 'hidden',
     flex: 1,
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 110,
-    backgroundColor: '#3a3a3a',
+    backgroundColor: '#181830',
   },
   info: {
     padding: 10,
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cartBtn: {
-    backgroundColor: '#3a3a3a',
+    backgroundColor: '#1a6fff',
     borderRadius: 4,
     width: 26,
     height: 26,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cartBtnText: {
-    color: '#ccc',
+    color: '#fff',
     fontSize: 18,
     lineHeight: 22,
   },

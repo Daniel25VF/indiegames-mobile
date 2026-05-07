@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+﻿import React, { useEffect, useState } from 'react'
 import {
   View,
   Text,
@@ -9,10 +9,11 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native'
-import type { StackNavigationProp, RouteProp } from '@react-navigation/stack'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { RouteProp } from '@react-navigation/native'
 import type { RootStackParams } from '../navigation'
-import { getGames, mapApiGameListItem } from '../services/api'
-import type { Game } from '../types/games'
+import { getGames, mapApiGameListItem } from '@shared/services/api'
+import type { Game } from '@shared/types/games'
 import GameCard from '../components/GameCard'
 import { useApp } from '../context/AppContext'
 

@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React, { useState } from 'react'
 import {
   View,
   Text,
@@ -6,13 +6,28 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
+  Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useApp } from '../context/AppContext'
-import type { Game } from '../types/games'
+import type { Game } from '@shared/types/games'
 
 export default function CartScreen() {
-  const { cartItems, removeFromCartLocal } = useApp()
+  const { cartItems, removeFromCartLocal, checkout } = useApp()
+  const [checkingOut, setCheckingOut] = useState(false)
+
+  const handleCheckout = async () => {
+    setCheckingOut(true)
+    try {
+      await checkout()
+      Alert.alert('¡Compra completada!', 'Los juegos ya están en tu biblioteca.')
+    } catch {
+      Alert.alert('Error', 'No se pudo completar la compra. Inténtalo de nuevo.')
+    } finally {
+      setCheckingOut(false)
+    }
+  }
 
   const total = cartItems.reduce((sum, g) => sum + (g.price ?? 0), 0)
 
@@ -69,8 +84,15 @@ export default function CartScreen() {
               <Text style={styles.totalLabel}>Total</Text>
               <Text style={styles.totalPrice}>{total.toFixed(2)}€</Text>
             </View>
-            <TouchableOpacity style={styles.checkoutBtn}>
-              <Text style={styles.checkoutTxt}>Continuar al pago</Text>
+            <TouchableOpacity
+              style={[styles.checkoutBtn, checkingOut && styles.checkoutBtnDisabled]}
+              onPress={handleCheckout}
+              disabled={checkingOut}
+            >
+              {checkingOut
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.checkoutTxt}>Continuar al pago</Text>
+              }
             </TouchableOpacity>
           </View>
         </>
@@ -80,12 +102,12 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1b1b1b' },
+  container: { flex: 1, backgroundColor: '#07070f' },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2d2d2d',
+    borderBottomColor: '#14142a',
   },
   title: { color: '#fff', fontSize: 20, fontWeight: '700' },
   count: { color: '#888', fontSize: 13, marginTop: 2 },
@@ -105,14 +127,14 @@ const styles = StyleSheet.create({
     gap: 14,
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a2a',
-    backgroundColor: '#222',
+    borderBottomColor: '#14142a',
+    backgroundColor: '#0d0d1c',
   },
   itemImage: {
     width: 90,
     height: 60,
     borderRadius: 6,
-    backgroundColor: '#3a3a3a',
+    backgroundColor: '#181830',
   },
   itemInfo: { flex: 1 },
   itemTitle: { color: '#e0e0e0', fontSize: 14, fontWeight: '600', marginBottom: 3 },
@@ -122,7 +144,7 @@ const styles = StyleSheet.create({
   itemPrice: { color: '#fff', fontSize: 15, fontWeight: '700' },
   removeBtn: {
     borderWidth: 1,
-    borderColor: '#3a3a3a',
+    borderColor: '#252550',
     borderRadius: 4,
     width: 28,
     height: 28,
@@ -133,8 +155,8 @@ const styles = StyleSheet.create({
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#2d2d2d',
-    backgroundColor: '#1b1b1b',
+    borderTopColor: '#14142a',
+    backgroundColor: '#07070f',
     gap: 12,
   },
   totalRow: {
@@ -145,10 +167,13 @@ const styles = StyleSheet.create({
   totalLabel: { color: '#aaa', fontSize: 14 },
   totalPrice: { color: '#fff', fontSize: 22, fontWeight: '700' },
   checkoutBtn: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#1a6fff',
     borderRadius: 6,
     paddingVertical: 13,
     alignItems: 'center',
   },
-  checkoutTxt: { color: '#1b1b1b', fontWeight: '700', fontSize: 15 },
+  checkoutBtnDisabled: {
+    opacity: 0.6,
+  },
+  checkoutTxt: { color: '#fff', fontWeight: '700', fontSize: 15 },
 })

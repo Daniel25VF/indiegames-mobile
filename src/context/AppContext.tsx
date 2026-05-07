@@ -1,14 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import type { Game } from '../types/games'
-import type { AuthUser } from '../services/auth'
-import { setAuthToken, addToCart, removeFromCart, getCart, mapGameSummary } from '../services/api'
-import { restoreSession, logout } from '../services/auth'
+﻿import React, { createContext, useContext, useState, useEffect } from 'react'
+import type { Game } from '@shared/types/games'
+import type { AuthUser } from '@shared/services/auth'
+import { configure, setAuthToken, addToCart, removeFromCart, getCart, mapGameSummary, checkoutCart } from '@shared/services/api'
+import { restoreSession, logout } from '@shared/services/auth'
+
+configure('http://10.0.2.2:5239')
 
 interface AppContextValue {
   cartItems: Game[]
   authUser: AuthUser | null
   addToCartLocal: (game: Game) => void
   removeFromCartLocal: (id: string) => void
+  checkout: () => Promise<void>
   handleAuthSuccess: (user: AuthUser) => void
   handleSignOut: () => void
 }
@@ -51,6 +54,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const checkout = async () => {
+    await checkoutCart()
+    setCartItems([])
+  }
+
   const handleAuthSuccess = async (user: AuthUser) => {
     setAuthUser(user)
     setAuthToken(user.accessToken)
@@ -70,6 +78,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       authUser,
       addToCartLocal,
       removeFromCartLocal,
+      checkout,
       handleAuthSuccess,
       handleSignOut,
     }}>
