@@ -50,7 +50,7 @@ export default function SearchResultsScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator color="#6bb8e8" size="large" />
+          <ActivityIndicator color="#a78bfa" size="large" />
         </View>
       ) : games.length === 0 ? (
         <View style={styles.centered}>
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2d2d2d',
   },
   backBtn: { paddingRight: 4 },
-  backTxt: { color: '#6bb8e8', fontSize: 14 },
+  backTxt: { color: '#a78bfa', fontSize: 14 },
   title: { color: '#fff', fontSize: 15, fontWeight: '600', flex: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyTxt: { color: '#aaa', fontSize: 14, textAlign: 'center', paddingHorizontal: 32 },

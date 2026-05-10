@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2a2a2a',
   },
-  reasonBtnActive: { borderColor: '#4a9eff', backgroundColor: '#1a2a3a' },
+  reasonBtnActive: { borderColor: '#a78bfa', backgroundColor: '#1e1040' },
   radio: {
     width: 16,
     height: 16,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#555',
   },
-  radioActive: { borderColor: '#4a9eff', backgroundColor: '#4a9eff' },
+  radioActive: { borderColor: '#a78bfa', backgroundColor: '#a78bfa' },
   reasonTxt: { color: '#bbb', fontSize: 14 },
   reasonTxtActive: { color: '#fff' },
   input: {

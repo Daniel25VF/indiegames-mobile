@@ -53,7 +53,7 @@ const renderBody = () => {
     if (loading) {
       return (
         <View style={styles.centered}>
-          <ActivityIndicator color="#4a9eff" size="large" />
+          <ActivityIndicator color="#a78bfa" size="large" />
         </View>
       )
     }
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   heroGenres: { color: '#ccc', fontSize: 12, marginBottom: 12 },
   heroActions: { flexDirection: 'row', gap: 10 },
   heroBtnPrimary: {
-    backgroundColor: '#1a6fff',
+    backgroundColor: '#7c3aed',
     borderRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -182,12 +182,12 @@ const styles = StyleSheet.create({
   heroBtnTxt: { color: '#fff', fontWeight: '600', fontSize: 13 },
   heroBtnSecondary: {
     borderWidth: 1,
-    borderColor: '#4a9eff',
+    borderColor: '#a78bfa',
     borderRadius: 4,
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
-  heroBtnOutlineTxt: { color: '#4a9eff', fontSize: 13 },
+  heroBtnOutlineTxt: { color: '#a78bfa', fontSize: 13 },
   sectionTitle: {
     color: '#e0e0e0',
     fontSize: 16,

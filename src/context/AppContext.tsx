@@ -1,7 +1,17 @@
 ﻿import React, { createContext, useContext, useState, useEffect } from 'react'
 import type { Game } from '@shared/types/games'
 import type { AuthUser } from '@shared/services/auth'
-import { configure, setAuthToken, addToCart, removeFromCart, getCart, mapGameSummary, checkoutCart } from '@shared/services/api'
+import {
+  configure,
+  setAuthToken,
+  setCurrentUserId,
+  getCurrentUser,
+  addToCart,
+  removeFromCart,
+  getCart,
+  mapGameSummary,
+  checkoutCart,
+} from '@shared/services/api'
 import { restoreSession, logout } from '@shared/services/auth'
 
 configure('http://10.0.2.2:5239')
@@ -9,6 +19,7 @@ configure('http://10.0.2.2:5239')
 interface AppContextValue {
   cartItems: Game[]
   authUser: AuthUser | null
+  userId: string | null
   addToCartLocal: (game: Game) => void
   removeFromCartLocal: (id: string) => void
   checkout: () => Promise<void>
@@ -21,11 +32,20 @@ const AppContext = createContext<AppContextValue | null>(null)
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<Game[]>([])
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
 
   const loadCart = async () => {
     try {
       const cart = await getCart()
       if (cart.game.length > 0) setCartItems(cart.game.map(mapGameSummary))
+    } catch { /* non-critical */ }
+  }
+
+  const loadUserId = async () => {
+    try {
+      const profile = await getCurrentUser()
+      setUserId(profile.userId)
+      setCurrentUserId(profile.userId)
     } catch { /* non-critical */ }
   }
 
@@ -35,6 +55,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setAuthUser(user)
         setAuthToken(user.accessToken)
         loadCart()
+        loadUserId()
       }
     })
   }, [])
@@ -63,12 +84,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAuthUser(user)
     setAuthToken(user.accessToken)
     await loadCart()
+    await loadUserId()
   }
 
   const handleSignOut = () => {
     logout()
     setAuthUser(null)
     setAuthToken(null)
+    setCurrentUserId(null)
+    setUserId(null)
     setCartItems([])
   }
 
@@ -76,6 +100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       cartItems,
       authUser,
+      userId,
       addToCartLocal,
       removeFromCartLocal,
       checkout,

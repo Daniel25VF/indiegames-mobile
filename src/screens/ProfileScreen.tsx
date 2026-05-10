@@ -13,7 +13,16 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useApp } from '../context/AppContext'
-import { getCurrentUser, updateDisplayName, type BasicUserResponse } from '@shared/services/api'
+import {
+  getCurrentUser,
+  updateDisplayName,
+  getUserLibrary,
+  getGameAchievements,
+  type BasicUserResponse,
+  type AchievementResponse,
+} from '@shared/services/api'
+
+type RecentAchievement = AchievementResponse & { gameTitle: string }
 
 interface Friend {
   id: number
@@ -45,13 +54,15 @@ const STATUS_COLOR: Record<Friend['status'], string> = {
 }
 
 export default function ProfileScreen() {
-  const { authUser } = useApp()
+  const { authUser, userId } = useApp()
   const [apiUser, setApiUser] = useState<BasicUserResponse | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [editVisible, setEditVisible] = useState(false)
   const [editName, setEditName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [recentAchievements, setRecentAchievements] = useState<RecentAchievement[]>([])
+  const [loadingAchievements, setLoadingAchievements] = useState(false)
 
   const [friends, setFriends] = useState<Friend[]>(mockFriends)
   const [addInput, setAddInput] = useState('')
@@ -71,6 +82,35 @@ export default function ProfileScreen() {
   }, [authUser])
 
   useEffect(() => { loadProfile() }, [loadProfile])
+
+  useEffect(() => {
+    if (!userId) return
+    setLoadingAchievements(true)
+    getUserLibrary()
+      .then(async library => {
+        const toCheck = library.slice(0, 8)
+        const results = await Promise.allSettled(
+          toCheck.map(game =>
+            getGameAchievements(game.id, userId).then(list =>
+              list
+                .filter(a => a.isUnlocked)
+                .map(a => ({ ...a, gameTitle: game.title }))
+            )
+          )
+        )
+        const all: RecentAchievement[] = results
+          .filter((r): r is PromiseFulfilledResult<RecentAchievement[]> => r.status === 'fulfilled')
+          .flatMap(r => r.value)
+        all.sort((a, b) => {
+          const da = a.unlockedAt ? new Date(a.unlockedAt).getTime() : 0
+          const db = b.unlockedAt ? new Date(b.unlockedAt).getTime() : 0
+          return db - da
+        })
+        setRecentAchievements(all.slice(0, 5))
+      })
+      .catch(() => {})
+      .finally(() => setLoadingAchievements(false))
+  }, [userId])
 
   const handleSaveName = async () => {
     const name = editName.trim()
@@ -114,7 +154,7 @@ export default function ProfileScreen() {
         <View style={styles.profileCard}>
           {loadingProfile ? (
             <View style={styles.avatar}>
-              <ActivityIndicator color="#4a9eff" />
+              <ActivityIndicator color="#a78bfa" />
             </View>
           ) : avatarUrl ? (
             <Image
@@ -137,6 +177,43 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             )}
           </View>
+        </View>
+
+        {/* Recent achievements */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionLabel}>LOGROS RECIENTES</Text>
+            {recentAchievements.length > 0 && (
+              <View style={styles.achievementsCountBadge}>
+                <Text style={styles.achievementsCountTxt}>{recentAchievements.length}</Text>
+              </View>
+            )}
+          </View>
+
+          {loadingAchievements && (
+            <ActivityIndicator color="#a78bfa" style={{ marginTop: 4 }} />
+          )}
+
+          {!loadingAchievements && recentAchievements.length === 0 && (
+            <View style={styles.achievementsEmpty}>
+              <Text style={styles.achievementsEmptyIcon}>🏆</Text>
+              <Text style={styles.achievementsEmptyText}>Aún no has desbloqueado ningún logro</Text>
+            </View>
+          )}
+
+          {!loadingAchievements && recentAchievements.map(a => (
+            <View key={a.id} style={styles.achievementRow}>
+              <Text style={styles.achievementIcon}>🏆</Text>
+              <View style={styles.achievementInfo}>
+                <Text style={styles.achievementName}>{a.name}</Text>
+                <Text style={styles.achievementDesc}>{a.description}</Text>
+                <Text style={styles.achievementGame}>
+                  {a.gameTitle}
+                  {a.unlockedAt ? ` · ${new Date(a.unlockedAt).toLocaleDateString('es-ES')}` : ''}
+                </Text>
+              </View>
+            </View>
+          ))}
         </View>
 
         {/* Add friend */}
@@ -298,7 +375,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     alignSelf: 'flex-start',
   },
-  editBtnTxt: { color: '#4a9eff', fontSize: 12, fontWeight: '600' },
+  editBtnTxt: { color: '#a78bfa', fontSize: 12, fontWeight: '600' },
   section: {
     padding: 16,
     borderBottomWidth: 1,
@@ -319,7 +396,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   addBtn: {
-    backgroundColor: '#1a6fff',
+    backgroundColor: '#7c3aed',
     borderRadius: 4,
     width: 40,
     alignItems: 'center',
@@ -383,7 +460,7 @@ const styles = StyleSheet.create({
   },
   charCount: { color: '#666', fontSize: 11, alignSelf: 'flex-end' },
   saveBtn: {
-    backgroundColor: '#1a6fff',
+    backgroundColor: '#7c3aed',
     borderRadius: 4,
     paddingHorizontal: 24,
     paddingVertical: 10,
@@ -411,4 +488,36 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   removeTxt: { color: '#f44336', fontSize: 13 },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  achievementsCountBadge: {
+    backgroundColor: '#12122a',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  achievementsCountTxt: { color: '#aaa', fontSize: 11 },
+  achievementsEmpty: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 6,
+  },
+  achievementsEmptyIcon: { fontSize: 28, opacity: 0.3 },
+  achievementsEmptyText: { color: '#555', fontSize: 12 },
+  achievementRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#14142a',
+  },
+  achievementIcon: { fontSize: 20, lineHeight: 26 },
+  achievementInfo: { flex: 1, gap: 2 },
+  achievementName: { color: '#e0e0e0', fontSize: 13, fontWeight: '600' },
+  achievementDesc: { color: '#888', fontSize: 12 },
+  achievementGame: { color: '#555', fontSize: 11, marginTop: 2 },
 })

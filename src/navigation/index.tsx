@@ -42,7 +42,7 @@ function MainTabs() {
           backgroundColor: '#07070f',
           borderTopColor: '#14142a',
         },
-        tabBarActiveTintColor: '#4a9eff',
+        tabBarActiveTintColor: '#a78bfa',
         tabBarInactiveTintColor: '#555',
         tabBarLabelStyle: { fontSize: 11 },
         tabBarIcon: ({ focused, color, size }) => {

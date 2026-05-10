@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   totalLabel: { color: '#aaa', fontSize: 14 },
   totalPrice: { color: '#fff', fontSize: 22, fontWeight: '700' },
   checkoutBtn: {
-    backgroundColor: '#1a6fff',
+    backgroundColor: '#7c3aed',
     borderRadius: 6,
     paddingVertical: 13,
     alignItems: 'center',

@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cartBtn: {
-    backgroundColor: '#1a6fff',
+    backgroundColor: '#7c3aed',
     borderRadius: 4,
     width: 26,
     height: 26,

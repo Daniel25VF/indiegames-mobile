@@ -13,23 +13,39 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import type { StackScreenProps } from '@react-navigation/stack'
 import type { RootStackParams } from '../navigation'
-import { getGameById, mapApiGame, getGameAchievements, type AchievementResponse } from '@shared/services/api'
+import {
+  getGameById,
+  mapApiGame,
+  getGameAchievements,
+  getGameBuildsAsUser,
+  type AchievementResponse,
+  type GameBuildAsUserListItem,
+} from '@shared/services/api'
 import type { Game } from '@shared/types/games'
 import { useApp } from '../context/AppContext'
 import ReportModal from '../components/ReportModal'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 type Props = StackScreenProps<RootStackParams, 'GameDetail'>
+
+const BUILD_VERSION_KEY = (gameId: string) => `indie_last_build_${gameId}`
 
 export default function GameDetailScreen({ route, navigation }: Props) {
   const { game: initialGame } = route.params
   const [game, setGame] = useState<Game>(initialGame)
   const [loadingDetail, setLoadingDetail] = useState(true)
   const [slideIndex, setSlideIndex] = useState(0)
-  const { cartItems, addToCartLocal, authUser } = useApp()
+  const { cartItems, addToCartLocal, authUser, userId } = useApp()
   const [reportVisible, setReportVisible] = useState(false)
 
   const [achievements, setAchievements] = useState<AchievementResponse[]>([])
   const [loadingAchievements, setLoadingAchievements] = useState(false)
+
+  const [builds, setBuilds] = useState<GameBuildAsUserListItem[]>([])
+  const [acknowledgedBuildId, setAcknowledgedBuildId] = useState<string | null>(null)
+
+  const releaseBuild = builds.find(b => b.isReleaseBuild) ?? null
+  const hasUpdate = !!authUser && releaseBuild !== null && acknowledgedBuildId !== releaseBuild.id
 
   const inCart = cartItems.some(g => g.id === game.id)
 
@@ -41,12 +57,32 @@ export default function GameDetailScreen({ route, navigation }: Props) {
   }, [initialGame.id])
 
   useEffect(() => {
+    if (!userId) return
     setLoadingAchievements(true)
-    getGameAchievements(initialGame.id)
-      .then(res => setAchievements(res.items))
+    getGameAchievements(initialGame.id, userId)
+      .then(list => setAchievements(list))
       .catch(() => {})
       .finally(() => setLoadingAchievements(false))
+  }, [initialGame.id, userId])
+
+  useEffect(() => {
+    if (!authUser) return
+    getGameBuildsAsUser(initialGame.id)
+      .then(page => setBuilds(page.items))
+      .catch(() => {})
+  }, [initialGame.id, authUser])
+
+  useEffect(() => {
+    AsyncStorage.getItem(BUILD_VERSION_KEY(initialGame.id))
+      .then(val => setAcknowledgedBuildId(val))
+      .catch(() => {})
   }, [initialGame.id])
+
+  const handleAcknowledgeUpdate = async () => {
+    if (!releaseBuild) return
+    await AsyncStorage.setItem(BUILD_VERSION_KEY(initialGame.id), releaseBuild.id)
+    setAcknowledgedBuildId(releaseBuild.id)
+  }
 
   const screenshots = game.screenshots && game.screenshots.length > 0
     ? game.screenshots
@@ -76,7 +112,7 @@ export default function GameDetailScreen({ route, navigation }: Props) {
         <View style={styles.carouselWrapper}>
           {loadingDetail && (
             <View style={styles.carouselLoading}>
-              <ActivityIndicator color="#6bb8e8" />
+              <ActivityIndicator color="#a78bfa" />
             </View>
           )}
           <FlatList
@@ -118,6 +154,17 @@ export default function GameDetailScreen({ route, navigation }: Props) {
             </View>
           )}
 
+          {/* Update banner for library games */}
+          {hasUpdate && releaseBuild && (
+            <TouchableOpacity style={styles.updateBanner} onPress={handleAcknowledgeUpdate}>
+              <View style={styles.updateBannerLeft}>
+                <Text style={styles.updateBannerTitle}>↑ Actualización disponible</Text>
+                <Text style={styles.updateBannerSub}>Nueva versión: {releaseBuild.versioName}</Text>
+              </View>
+              <Text style={styles.updateBannerBtn}>Actualizar</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Purchase box */}
           <View style={styles.purchaseBox}>
             <View style={styles.priceRow}>
@@ -141,6 +188,9 @@ export default function GameDetailScreen({ route, navigation }: Props) {
                 {inCart ? 'En el carrito ✓' : 'Añadir al carrito'}
               </Text>
             </TouchableOpacity>
+            {releaseBuild && (
+              <Text style={styles.versionLabel}>Versión {releaseBuild.versioName}</Text>
+            )}
           </View>
 
           {/* Description */}
@@ -163,7 +213,7 @@ export default function GameDetailScreen({ route, navigation }: Props) {
             </View>
 
             {loadingAchievements ? (
-              <ActivityIndicator color="#4a9eff" style={{ marginTop: 8 }} />
+              <ActivityIndicator color="#a78bfa" style={{ marginTop: 8 }} />
             ) : achievements.length === 0 ? (
               <Text style={styles.emptyTxt}>Este juego no tiene logros.</Text>
             ) : (
@@ -227,7 +277,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#14142a',
   },
   backBtn: { paddingVertical: 4 },
-  backTxt: { color: '#4a9eff', fontSize: 14 },
+  backTxt: { color: '#a78bfa', fontSize: 14 },
   headerTitle: { flex: 1, color: '#fff', fontWeight: '600', fontSize: 15 },
   carouselWrapper: { height: 220, backgroundColor: '#000' },
   carouselLoading: {
@@ -251,7 +301,7 @@ const styles = StyleSheet.create({
   dotActive: { backgroundColor: '#fff' },
   body: { padding: 16, gap: 16 },
   title: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  developer: { color: '#4a9eff', fontSize: 13 },
+  developer: { color: '#a78bfa', fontSize: 13 },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tag: {
     backgroundColor: '#0f0f20',
@@ -295,7 +345,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  achievementsCount: { color: '#4a9eff', fontSize: 12, fontWeight: '600' },
+  achievementsCount: { color: '#a78bfa', fontSize: 12, fontWeight: '600' },
   achievementRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -321,4 +371,28 @@ const styles = StyleSheet.create({
   metaValue: { color: '#ccc', fontSize: 12 },
   reportBtn: { alignItems: 'center', paddingVertical: 8 },
   reportTxt: { color: '#666', fontSize: 12, textDecorationLine: 'underline' },
+  updateBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(39,174,96,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(39,174,96,0.4)',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  updateBannerLeft: { flex: 1, gap: 2 },
+  updateBannerTitle: { color: '#2ecc71', fontWeight: '700', fontSize: 13 },
+  updateBannerSub: { color: '#888', fontSize: 11 },
+  updateBannerBtn: {
+    color: '#fff',
+    backgroundColor: '#27ae60',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  versionLabel: { color: '#555', fontSize: 11, textAlign: 'right', marginTop: 4 },
 })

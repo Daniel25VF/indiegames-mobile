@@ -113,7 +113,7 @@ export default function LibraryScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator color="#4a9eff" size="large" />
+          <ActivityIndicator color="#a78bfa" size="large" />
         </View>
       ) : error ? (
         <View style={styles.centered}>
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   },
   logoTxt: { color: '#fff', fontWeight: '700', fontSize: 16 },
   backBtn: { paddingVertical: 4 },
-  backTxt: { color: '#4a9eff', fontSize: 14 },
+  backTxt: { color: '#a78bfa', fontSize: 14 },
   headerTitle: { flex: 1, color: '#fff', fontWeight: '700', fontSize: 16 },
   headerCount: { color: '#666', fontSize: 13 },
   tabs: {
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabBtnActive: { borderBottomColor: '#4a9eff' },
+  tabBtnActive: { borderBottomColor: '#a78bfa' },
   tabTxt: { color: '#888', fontSize: 13 },
   tabTxtActive: { color: '#fff', fontWeight: '600' },
   searchWrap: {
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  retryTxt: { color: '#4a9eff', fontSize: 13 },
+  retryTxt: { color: '#a78bfa', fontSize: 13 },
   gameList: { paddingBottom: 20 },
   gameRow: {
     flexDirection: 'row',
