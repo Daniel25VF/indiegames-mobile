@@ -16,10 +16,14 @@ import { restoreSession, logout } from '@shared/services/auth'
 
 configure('http://10.0.2.2:5239')
 
+type Theme = 'dark' | 'light'
+
 interface AppContextValue {
   cartItems: Game[]
   authUser: AuthUser | null
   userId: string | null
+  theme: Theme
+  toggleTheme: () => void
   addToCartLocal: (game: Game) => void
   removeFromCartLocal: (id: string) => void
   checkout: () => Promise<void>
@@ -33,6 +37,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<Game[]>([])
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [theme, setTheme] = useState<Theme>('dark')
+
+  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
 
   const loadCart = async () => {
     try {
@@ -101,6 +108,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       cartItems,
       authUser,
       userId,
+      theme,
+      toggleTheme,
       addToCartLocal,
       removeFromCartLocal,
       checkout,

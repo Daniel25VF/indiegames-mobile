@@ -8,6 +8,7 @@ import GameDetailScreen from '../screens/GameDetailScreen'
 import SearchResultsScreen from '../screens/SearchResultsScreen'
 import CartScreen from '../screens/CartScreen'
 import ProfileScreen from '../screens/ProfileScreen'
+import LibraryScreen from '../screens/LibraryScreen'
 import type { Game } from '@shared/types/games'
 
 export type RootStackParams = {
@@ -19,6 +20,7 @@ export type RootStackParams = {
 export type TabParams = {
   Home: undefined
   Cart: { cartCount: number }
+  Library: undefined
   Profile: undefined
 }
 
@@ -30,6 +32,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name']
 const TAB_ICON: Record<string, { active: IoniconName; inactive: IoniconName }> = {
   Home:    { active: 'home',         inactive: 'home-outline' },
   Cart:    { active: 'bag',          inactive: 'bag-outline' },
+  Library: { active: 'library',      inactive: 'library-outline' },
   Profile: { active: 'person',       inactive: 'person-outline' },
 }
 
@@ -53,6 +56,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio' }} />
       <Tab.Screen name="Cart" component={CartScreen} options={{ title: 'Carrito' }} />
+      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Biblioteca' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />
     </Tab.Navigator>
   )

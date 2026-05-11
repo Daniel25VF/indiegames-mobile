@@ -12,6 +12,10 @@ import {
   Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { useNavigation } from '@react-navigation/native'
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
+import type { TabParams } from '../navigation'
 import { useApp } from '../context/AppContext'
 import {
   getCurrentUser,
@@ -20,6 +24,7 @@ import {
   getGameAchievements,
   type BasicUserResponse,
   type AchievementResponse,
+  type GameSummary,
 } from '@shared/services/api'
 
 type RecentAchievement = AchievementResponse & { gameTitle: string }
@@ -54,13 +59,17 @@ const STATUS_COLOR: Record<Friend['status'], string> = {
 }
 
 export default function ProfileScreen() {
-  const { authUser, userId } = useApp()
+  const { authUser, userId, theme, toggleTheme, handleSignOut } = useApp()
+  const navigation = useNavigation<BottomTabNavigationProp<TabParams>>()
   const [apiUser, setApiUser] = useState<BasicUserResponse | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
   const [editVisible, setEditVisible] = useState(false)
+  const [profileMenuVisible, setProfileMenuVisible] = useState(false)
   const [editName, setEditName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [recentGames, setRecentGames] = useState<GameSummary[]>([])
+  const [loadingGames, setLoadingGames] = useState(false)
   const [recentAchievements, setRecentAchievements] = useState<RecentAchievement[]>([])
   const [loadingAchievements, setLoadingAchievements] = useState(false)
 
@@ -85,9 +94,12 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (!userId) return
+    setLoadingGames(true)
     setLoadingAchievements(true)
     getUserLibrary()
       .then(async library => {
+        setRecentGames(library.slice(0, 4))
+        setLoadingGames(false)
         const toCheck = library.slice(0, 8)
         const results = await Promise.allSettled(
           toCheck.map(game =>
@@ -108,7 +120,7 @@ export default function ProfileScreen() {
         })
         setRecentAchievements(all.slice(0, 5))
       })
-      .catch(() => {})
+      .catch(() => { setLoadingGames(false) })
       .finally(() => setLoadingAchievements(false))
   }, [userId])
 
@@ -152,19 +164,25 @@ export default function ProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile card */}
         <View style={styles.profileCard}>
-          {loadingProfile ? (
-            <View style={styles.avatar}>
-              <ActivityIndicator color="#a78bfa" />
-            </View>
-          ) : avatarUrl ? (
-            <Image
-              source={{ uri: avatarUrl }}
-              style={styles.avatarImg}
-              onError={() => setAvatarUrl(null)}
-            />
-          ) : (
-            <View style={styles.avatar} />
-          )}
+          <TouchableOpacity onPress={() => authUser && setProfileMenuVisible(true)} activeOpacity={0.8}>
+            {loadingProfile ? (
+              <View style={styles.avatar}>
+                <ActivityIndicator color="#a78bfa" />
+              </View>
+            ) : avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.avatarImg}
+                onError={() => setAvatarUrl(null)}
+              />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarInitial}>
+                  {(apiUser?.displayName ?? authUser?.username ?? '?')[0].toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
           <View style={styles.profileInfo}>
             <Text style={styles.username}>{displayName}</Text>
             {handle && <Text style={styles.handle}>@{handle}</Text>}
@@ -177,6 +195,38 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             )}
           </View>
+        </View>
+
+        {/* Recent games */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionLabel}>ÚLTIMAS ADQUISICIONES</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Library')}>
+              <Text style={styles.verMasTxt}>Ver más →</Text>
+            </TouchableOpacity>
+          </View>
+
+          {loadingGames && <ActivityIndicator color="#a78bfa" style={{ marginTop: 4 }} />}
+
+          {!loadingGames && recentGames.length === 0 && (
+            <Text style={styles.sectionHint}>Aún no tienes juegos en tu biblioteca.</Text>
+          )}
+
+          {!loadingGames && recentGames.length > 0 && (
+            <View style={styles.recentGamesGrid}>
+              {recentGames.map(g => {
+                const img = g.artworks?.[0]?.smallImageUrl ?? g.storePictures?.[0]?.smallImageUrl ?? ''
+                return (
+                  <View key={g.id} style={styles.recentGameCard}>
+                    <View style={styles.recentGameImg}>
+                      {!!img && <Image source={{ uri: img }} style={styles.recentGameImgFill} resizeMode="cover" />}
+                    </View>
+                    <Text style={styles.recentGameTitle} numberOfLines={1}>{g.title}</Text>
+                  </View>
+                )
+              })}
+            </View>
+          )}
         </View>
 
         {/* Recent achievements */}
@@ -196,14 +246,14 @@ export default function ProfileScreen() {
 
           {!loadingAchievements && recentAchievements.length === 0 && (
             <View style={styles.achievementsEmpty}>
-              <Text style={styles.achievementsEmptyIcon}>🏆</Text>
+              <Ionicons name="trophy-outline" size={28} color="#555" style={{ opacity: 0.5 }} />
               <Text style={styles.achievementsEmptyText}>Aún no has desbloqueado ningún logro</Text>
             </View>
           )}
 
           {!loadingAchievements && recentAchievements.map(a => (
             <View key={a.id} style={styles.achievementRow}>
-              <Text style={styles.achievementIcon}>🏆</Text>
+              <Ionicons name="trophy" size={20} color="#a78bfa" />
               <View style={styles.achievementInfo}>
                 <Text style={styles.achievementName}>{a.name}</Text>
                 <Text style={styles.achievementDesc}>{a.description}</Text>
@@ -264,6 +314,39 @@ export default function ProfileScreen() {
           ))}
         </View>
       </ScrollView>
+
+      {/* Profile menu modal */}
+      <Modal
+        visible={profileMenuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setProfileMenuVisible(false)}
+      >
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setProfileMenuVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.profileMenuModal}>
+            <TouchableOpacity
+              style={styles.profileMenuItem}
+              onPress={() => { toggleTheme(); setProfileMenuVisible(false) }}
+            >
+              <View style={styles.profileMenuItemRow}>
+                <Ionicons name={theme === 'dark' ? 'sunny' : 'moon'} size={15} color="#e0e0e0" />
+                <Text style={styles.profileMenuItemTxt}>
+                  {theme === 'dark' ? '  Tema claro' : '  Tema oscuro'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <View style={styles.profileMenuDivider} />
+            <TouchableOpacity
+              style={styles.profileMenuItem}
+              onPress={() => { setProfileMenuVisible(false); handleSignOut() }}
+            >
+              <Text style={[styles.profileMenuItemTxt, styles.profileMenuSignOut]}>
+                Cerrar sesión
+              </Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Edit profile modal */}
       <Modal
@@ -505,7 +588,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 6,
   },
-  achievementsEmptyIcon: { fontSize: 28, opacity: 0.3 },
   achievementsEmptyText: { color: '#555', fontSize: 12 },
   achievementRow: {
     flexDirection: 'row',
@@ -515,9 +597,51 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#14142a',
   },
-  achievementIcon: { fontSize: 20, lineHeight: 26 },
+  achievementIcon: { lineHeight: 26 },
   achievementInfo: { flex: 1, gap: 2 },
   achievementName: { color: '#e0e0e0', fontSize: 13, fontWeight: '600' },
   achievementDesc: { color: '#888', fontSize: 12 },
   achievementGame: { color: '#555', fontSize: 11, marginTop: 2 },
+  avatarInitial: { color: '#a78bfa', fontSize: 28, fontWeight: '700' },
+  profileMenuModal: {
+    backgroundColor: '#0b0b18',
+    borderRadius: 12,
+    width: 220,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#1c1c38',
+  },
+  profileMenuItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  profileMenuItemRow: { flexDirection: 'row', alignItems: 'center' },
+  profileMenuItemTxt: { color: '#e0e0e0', fontSize: 14 },
+  profileMenuSignOut: { color: '#e05555' },
+  profileMenuDivider: { height: 1, backgroundColor: '#1c1c38' },
+  verMasTxt: { color: '#a78bfa', fontSize: 12 },
+  sectionHint: { color: '#555', fontSize: 12 },
+  recentGamesGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  recentGameCard: {
+    flex: 1,
+    gap: 4,
+  },
+  recentGameImg: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 6,
+    backgroundColor: '#181830',
+    overflow: 'hidden',
+  },
+  recentGameImgFill: {
+    width: '100%',
+    height: '100%',
+  },
+  recentGameTitle: {
+    color: '#aaa',
+    fontSize: 10,
+  },
 })

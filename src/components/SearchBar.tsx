@@ -1,5 +1,6 @@
 import React from 'react'
-import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native'
+import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 
 interface SearchBarProps {
   value: string
@@ -21,7 +22,7 @@ export default function SearchBar({ value, onChange, onSearch }: SearchBarProps)
           returnKeyType="search"
         />
         <TouchableOpacity style={styles.btn} onPress={() => onSearch(value)}>
-          <Text style={styles.btnText}>🔍</Text>
+          <Ionicons name="search" size={16} color="#888" />
         </TouchableOpacity>
       </View>
     </View>

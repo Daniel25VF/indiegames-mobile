@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import type { Game, Collection } from '@shared/types/games'
 import {
   getUserLibrary,
@@ -152,7 +153,7 @@ export default function LibraryScreen() {
                     <Text style={styles.gameGenres}>{item.genres.join(', ')}</Text>
                   </View>
                   <TouchableOpacity style={styles.reportRowBtn} onPress={() => setReportGame(item)}>
-                    <Text style={styles.reportRowTxt}>⚑</Text>
+                    <Ionicons name="flag-outline" size={16} color="#555" />
                   </TouchableOpacity>
                 </View>
               )}

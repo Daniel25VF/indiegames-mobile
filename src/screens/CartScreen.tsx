@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import type { Game } from '@shared/types/games'
 
@@ -66,7 +67,7 @@ export default function CartScreen() {
 
       {cartItems.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🛒</Text>
+          <Ionicons name="bag-outline" size={40} color="#555" style={{ opacity: 0.5 }} />
           <Text style={styles.emptyTxt}>No tienes juegos en el carrito.</Text>
           <Text style={styles.emptyHint}>Explora la tienda y añade juegos.</Text>
         </View>

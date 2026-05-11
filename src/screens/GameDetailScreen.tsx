@@ -22,6 +22,7 @@ import {
   type GameBuildAsUserListItem,
 } from '@shared/services/api'
 import type { Game } from '@shared/types/games'
+import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import ReportModal from '../components/ReportModal'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -158,7 +159,10 @@ export default function GameDetailScreen({ route, navigation }: Props) {
           {hasUpdate && releaseBuild && (
             <TouchableOpacity style={styles.updateBanner} onPress={handleAcknowledgeUpdate}>
               <View style={styles.updateBannerLeft}>
-                <Text style={styles.updateBannerTitle}>↑ Actualización disponible</Text>
+                <View style={styles.updateBannerTitleRow}>
+                  <Ionicons name="arrow-up" size={14} color="#2ecc71" />
+                  <Text style={styles.updateBannerTitle}> Actualización disponible</Text>
+                </View>
                 <Text style={styles.updateBannerSub}>Nueva versión: {releaseBuild.versioName}</Text>
               </View>
               <Text style={styles.updateBannerBtn}>Actualizar</Text>
@@ -184,9 +188,12 @@ export default function GameDetailScreen({ route, navigation }: Props) {
               style={[styles.buyBtn, inCart && styles.buyBtnInCart]}
               onPress={() => { if (!inCart) addToCartLocal(game) }}
             >
-              <Text style={[styles.buyBtnTxt, inCart && styles.buyBtnInCartTxt]}>
-                {inCart ? 'En el carrito ✓' : 'Añadir al carrito'}
-              </Text>
+              <View style={styles.buyBtnContent}>
+                {inCart && <Ionicons name="checkmark" size={14} color="#6a9a30" style={{ marginRight: 4 }} />}
+                <Text style={[styles.buyBtnTxt, inCart && styles.buyBtnInCartTxt]}>
+                  {inCart ? 'En el carrito' : 'Añadir al carrito'}
+                </Text>
+              </View>
             </TouchableOpacity>
             {releaseBuild && (
               <Text style={styles.versionLabel}>Versión {releaseBuild.versioName}</Text>
@@ -219,9 +226,11 @@ export default function GameDetailScreen({ route, navigation }: Props) {
             ) : (
               achievements.map(a => (
                 <View key={a.id} style={styles.achievementRow}>
-                  <Text style={styles.achievementIcon}>
-                    {a.isUnlocked === true ? '🏆' : a.isUnlocked === false ? '🔒' : '🏆'}
-                  </Text>
+                  <Ionicons
+                    name={a.isUnlocked ? 'trophy' : 'lock-closed'}
+                    size={20}
+                    color={a.isUnlocked ? '#a78bfa' : '#444'}
+                  />
                   <View style={styles.achievementInfo}>
                     <Text style={[styles.achievementName, a.isUnlocked === false && styles.achievementLocked]}>
                       {a.name}
@@ -334,6 +343,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
   },
+  buyBtnContent: { flexDirection: 'row', alignItems: 'center' },
   buyBtnInCart: { backgroundColor: '#2a3a1a' },
   buyBtnTxt: { color: '#a4d007', fontWeight: '700', fontSize: 14 },
   buyBtnInCartTxt: { color: '#6a9a30' },
@@ -354,7 +364,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#14142a',
   },
-  achievementIcon: { fontSize: 22, lineHeight: 28 },
+  achievementIcon: { lineHeight: 28 },
   achievementInfo: { flex: 1, gap: 2 },
   achievementName: { color: '#e0e0e0', fontSize: 13, fontWeight: '600' },
   achievementLocked: { color: '#666' },
@@ -383,6 +393,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   updateBannerLeft: { flex: 1, gap: 2 },
+  updateBannerTitleRow: { flexDirection: 'row', alignItems: 'center' },
   updateBannerTitle: { color: '#2ecc71', fontWeight: '700', fontSize: 13 },
   updateBannerSub: { color: '#888', fontSize: 11 },
   updateBannerBtn: {
