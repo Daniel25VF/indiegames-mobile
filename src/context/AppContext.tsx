@@ -11,6 +11,7 @@ import {
   getCart,
   mapGameSummary,
   checkoutCart,
+  getUserLibrary,
 } from '@shared/services/api'
 import { restoreSession, logout } from '@shared/services/auth'
 
@@ -20,6 +21,7 @@ type Theme = 'dark' | 'light'
 
 interface AppContextValue {
   cartItems: Game[]
+  ownedGameIds: Set<string>
   authUser: AuthUser | null
   userId: string | null
   theme: Theme
@@ -35,6 +37,7 @@ const AppContext = createContext<AppContextValue | null>(null)
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<Game[]>([])
+  const [ownedGameIds, setOwnedGameIds] = useState<Set<string>>(new Set())
   const [authUser, setAuthUser] = useState<AuthUser | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [theme, setTheme] = useState<Theme>('dark')
@@ -56,6 +59,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch { /* non-critical */ }
   }
 
+  const loadLibrary = async () => {
+    try {
+      const summaries = await getUserLibrary()
+      setOwnedGameIds(new Set(summaries.map(s => s.id)))
+    } catch { /* non-critical */ }
+  }
+
   useEffect(() => {
     restoreSession().then(user => {
       if (user) {
@@ -63,6 +73,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setAuthToken(user.accessToken)
         loadCart()
         loadUserId()
+        loadLibrary()
       }
     })
   }, [])
@@ -92,6 +103,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setAuthToken(user.accessToken)
     await loadCart()
     await loadUserId()
+    await loadLibrary()
   }
 
   const handleSignOut = () => {
@@ -101,11 +113,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCurrentUserId(null)
     setUserId(null)
     setCartItems([])
+    setOwnedGameIds(new Set())
   }
 
   return (
     <AppContext.Provider value={{
       cartItems,
+      ownedGameIds,
       authUser,
       userId,
       theme,

@@ -24,7 +24,7 @@ type HomeNavProp = StackNavigationProp<RootStackParams>
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeNavProp>()
-  const { addToCartLocal, authUser, handleAuthSuccess, handleSignOut } = useApp()
+  const { addToCartLocal, ownedGameIds, authUser, handleAuthSuccess, handleSignOut } = useApp()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -71,7 +71,13 @@ const renderBody = () => {
         numColumns={2}
         ListHeaderComponent={
           <>
-            <SearchBar value={searchQuery} onChange={setSearchQuery} onSearch={handleSearch} />
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSearch={handleSearch}
+              allGames={games}
+              onSelectGame={handleSelectGame}
+            />
             {hero && (
               <TouchableOpacity style={styles.hero} onPress={() => handleSelectGame(hero)} activeOpacity={0.9}>
                 <Image source={{ uri: hero.image }} style={styles.heroImage} resizeMode="cover" />
@@ -84,9 +90,18 @@ const renderBody = () => {
                     <TouchableOpacity style={styles.heroBtnPrimary} onPress={() => handleSelectGame(hero)}>
                       <Text style={styles.heroBtnTxt}>Ver detalles</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.heroBtnSecondary} onPress={() => addToCartLocal(hero)}>
-                      <Text style={styles.heroBtnOutlineTxt}>+ Carrito</Text>
-                    </TouchableOpacity>
+                    {ownedGameIds.has(hero.id) ? (
+                      <TouchableOpacity
+                        style={styles.heroBtnOwned}
+                        onPress={() => navigation.navigate('MainTabs', { screen: 'Library' } as any)}
+                      >
+                        <Text style={styles.heroBtnOwnedTxt}>Ver en biblioteca</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity style={styles.heroBtnSecondary} onPress={() => addToCartLocal(hero)}>
+                        <Text style={styles.heroBtnOutlineTxt}>+ Carrito</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               </TouchableOpacity>
@@ -187,7 +202,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
-  heroBtnOutlineTxt: { color: '#a78bfa', fontSize: 13 },
+  heroBtnOutlineTxt: { color: '#a78bfa', fontSize: 13, fontFamily: 'Poppins_400Regular' },
+  heroBtnOwned: {
+    backgroundColor: 'rgba(124,58,237,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.4)',
+    borderRadius: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  heroBtnOwnedTxt: { color: '#a78bfa', fontSize: 13, fontFamily: 'Poppins_400Regular' },
   sectionTitle: {
     color: '#e0e0e0',
     fontSize: 16,

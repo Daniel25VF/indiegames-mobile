@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   View,
   Text,
@@ -9,7 +9,56 @@ import {
   FlatList,
   StatusBar,
   ActivityIndicator,
+  Animated,
+  Dimensions,
 } from 'react-native'
+
+const SCREEN_WIDTH = Dimensions.get('window').width
+
+function SkeletonBlock({ style }: { style: object }) {
+  const opacity = useRef(new Animated.Value(0.3)).current
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.7, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 700, useNativeDriver: true }),
+      ])
+    )
+    anim.start()
+    return () => anim.stop()
+  }, [opacity])
+  return <Animated.View style={[{ backgroundColor: '#1c1c38', borderRadius: 4, opacity }, style]} />
+}
+
+function GameDetailSkeleton({ onBack }: { onBack: () => void }) {
+  return (
+    <ScrollView style={{ flex: 1, backgroundColor: '#07070f' }} showsVerticalScrollIndicator={false}>
+      <SkeletonBlock style={{ width: '100%', height: 220 }} />
+      <View style={{ padding: 16, gap: 14 }}>
+        <SkeletonBlock style={{ height: 26, width: '65%' }} />
+        <SkeletonBlock style={{ height: 14, width: '35%' }} />
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          {[80, 60, 70].map((w, i) => <SkeletonBlock key={i} style={{ height: 24, width: w, borderRadius: 3 }} />)}
+        </View>
+        <View style={{ backgroundColor: '#0f0f20', borderRadius: 8, padding: 16, gap: 12 }}>
+          <SkeletonBlock style={{ height: 20, width: '40%' }} />
+          <SkeletonBlock style={{ height: 44, borderRadius: 4 }} />
+        </View>
+        <SkeletonBlock style={{ height: 14, width: '30%' }} />
+        {[100, 85, 90, 75].map((w, i) => <SkeletonBlock key={i} style={{ height: 13, width: `${w}%` }} />)}
+        {[1, 2, 3].map(i => (
+          <View key={i} style={{ flexDirection: 'row', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#14142a' }}>
+            <SkeletonBlock style={{ width: 20, height: 20, borderRadius: 10 }} />
+            <View style={{ flex: 1, gap: 4 }}>
+              <SkeletonBlock style={{ height: 13, width: '70%' }} />
+              <SkeletonBlock style={{ height: 11, width: '50%' }} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  )
+}
 import { SafeAreaView } from 'react-native-safe-area-context'
 import type { StackScreenProps } from '@react-navigation/stack'
 import type { RootStackParams } from '../navigation'
@@ -36,7 +85,8 @@ export default function GameDetailScreen({ route, navigation }: Props) {
   const [game, setGame] = useState<Game>(initialGame)
   const [loadingDetail, setLoadingDetail] = useState(true)
   const [slideIndex, setSlideIndex] = useState(0)
-  const { cartItems, addToCartLocal, authUser, userId } = useApp()
+  const { cartItems, ownedGameIds, addToCartLocal, authUser, userId } = useApp()
+  const isOwned = ownedGameIds.has(initialGame.id)
   const [reportVisible, setReportVisible] = useState(false)
 
   const [achievements, setAchievements] = useState<AchievementResponse[]>([])
@@ -95,6 +145,21 @@ export default function GameDetailScreen({ route, navigation }: Props) {
 
   const unlockedCount = achievements.filter(a => a.isUnlocked).length
 
+  if (loadingDetail) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#07070f" />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Text style={styles.backTxt}>← Volver</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} numberOfLines={1}>{initialGame.title}</Text>
+        </View>
+        <GameDetailSkeleton onBack={() => navigation.goBack()} />
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#07070f" />
@@ -127,7 +192,7 @@ export default function GameDetailScreen({ route, navigation }: Props) {
               setSlideIndex(idx)
             }}
             renderItem={({ item }) => (
-              <Image source={{ uri: item }} style={styles.slide} resizeMode="cover" />
+              <Image source={{ uri: item }} style={[styles.slide, { width: SCREEN_WIDTH }]} resizeMode="cover" />
             )}
           />
           <View style={styles.dotsRow}>
@@ -185,13 +250,20 @@ export default function GameDetailScreen({ route, navigation }: Props) {
               )}
             </View>
             <TouchableOpacity
-              style={[styles.buyBtn, inCart && styles.buyBtnInCart]}
-              onPress={() => { if (!inCart) addToCartLocal(game) }}
+              style={[
+                styles.buyBtn,
+                isOwned ? styles.buyBtnOwned : inCart ? styles.buyBtnInCart : null,
+              ]}
+              onPress={() => {
+                if (isOwned) navigation.navigate('MainTabs', { screen: 'Library' } as any)
+                else if (!inCart) addToCartLocal(game)
+              }}
             >
               <View style={styles.buyBtnContent}>
-                {inCart && <Ionicons name="checkmark" size={14} color="#6a9a30" style={{ marginRight: 4 }} />}
-                <Text style={[styles.buyBtnTxt, inCart && styles.buyBtnInCartTxt]}>
-                  {inCart ? 'En el carrito' : 'Añadir al carrito'}
+                {isOwned && <Ionicons name="library-outline" size={14} color="#a78bfa" style={{ marginRight: 6 }} />}
+                {inCart && !isOwned && <Ionicons name="checkmark" size={14} color="#6a9a30" style={{ marginRight: 4 }} />}
+                <Text style={[styles.buyBtnTxt, isOwned ? styles.buyBtnOwnedTxt : inCart ? styles.buyBtnInCartTxt : null]}>
+                  {isOwned ? 'Ver en la biblioteca' : inCart ? 'En el carrito' : 'Añadir al carrito'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -345,8 +417,10 @@ const styles = StyleSheet.create({
   },
   buyBtnContent: { flexDirection: 'row', alignItems: 'center' },
   buyBtnInCart: { backgroundColor: '#2a3a1a' },
-  buyBtnTxt: { color: '#a4d007', fontWeight: '700', fontSize: 14 },
+  buyBtnOwned: { backgroundColor: 'rgba(124,58,237,0.15)', borderWidth: 1, borderColor: 'rgba(124,58,237,0.3)' },
+  buyBtnTxt: { color: '#a4d007', fontWeight: '700', fontSize: 14, fontFamily: 'Poppins_700Bold' },
   buyBtnInCartTxt: { color: '#6a9a30' },
+  buyBtnOwnedTxt: { color: '#a78bfa' },
   section: { gap: 8 },
   sectionTitle: { color: '#aaa', fontSize: 12, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
   description: { color: '#ccc', fontSize: 13, lineHeight: 20 },
