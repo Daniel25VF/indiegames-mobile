@@ -3,24 +3,23 @@ import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createStackNavigator } from '@react-navigation/stack'
 import { Ionicons } from '@expo/vector-icons'
+import { useApp } from '../context/AppContext'
 import HomeScreen from '../screens/HomeScreen'
 import GameDetailScreen from '../screens/GameDetailScreen'
 import SearchResultsScreen from '../screens/SearchResultsScreen'
 import CartScreen from '../screens/CartScreen'
 import ProfileScreen from '../screens/ProfileScreen'
-import LibraryScreen from '../screens/LibraryScreen'
 import type { Game } from '@shared/types/games'
 
 export type RootStackParams = {
   MainTabs: undefined
   GameDetail: { game: Game }
-  SearchResults: { query: string }
+  SearchResults: { query: string; genreId?: string }
 }
 
 export type TabParams = {
   Home: undefined
   Cart: { cartCount: number }
-  Library: undefined
   Profile: undefined
 }
 
@@ -32,11 +31,12 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name']
 const TAB_ICON: Record<string, { active: IoniconName; inactive: IoniconName }> = {
   Home:    { active: 'home',         inactive: 'home-outline' },
   Cart:    { active: 'bag',          inactive: 'bag-outline' },
-  Library: { active: 'library',      inactive: 'library-outline' },
   Profile: { active: 'person',       inactive: 'person-outline' },
 }
 
 function MainTabs() {
+  const { authUser } = useApp()
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -55,9 +55,8 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Inicio' }} />
-      <Tab.Screen name="Cart" component={CartScreen} options={{ title: 'Carrito' }} />
-      <Tab.Screen name="Library" component={LibraryScreen} options={{ title: 'Biblioteca' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />
+      {authUser && <Tab.Screen name="Cart" component={CartScreen} options={{ title: 'Carrito' }} />}
+      {authUser && <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />}
     </Tab.Navigator>
   )
 }

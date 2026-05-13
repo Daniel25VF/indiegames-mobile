@@ -7,6 +7,7 @@ const sharedRoot = path.resolve(projectRoot, '../indiegames-app/src')
 const config = getDefaultConfig(projectRoot)
 
 config.watchFolders = [sharedRoot]
+config.resolver.nodeModulesPaths = [path.resolve(projectRoot, 'node_modules')]
 config.resolver.extraNodeModules = {
   '@shared': sharedRoot,
 }

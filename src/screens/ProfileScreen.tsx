@@ -13,9 +13,6 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
-import type { TabParams } from '../navigation'
 import { useApp } from '../context/AppContext'
 import {
   getCurrentUser,
@@ -60,7 +57,6 @@ const STATUS_COLOR: Record<Friend['status'], string> = {
 
 export default function ProfileScreen() {
   const { authUser, userId, theme, toggleTheme, handleSignOut } = useApp()
-  const navigation = useNavigation<BottomTabNavigationProp<TabParams>>()
   const [apiUser, setApiUser] = useState<BasicUserResponse | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [loadingProfile, setLoadingProfile] = useState(false)
@@ -199,12 +195,7 @@ export default function ProfileScreen() {
 
         {/* Recent games */}
         <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionLabel}>ÚLTIMAS ADQUISICIONES</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Library')}>
-              <Text style={styles.verMasTxt}>Ver más →</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.sectionLabel}>ÚLTIMAS ADQUISICIONES</Text>
 
           {loadingGames && <ActivityIndicator color="#a78bfa" style={{ marginTop: 4 }} />}
 

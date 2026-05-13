@@ -164,7 +164,7 @@ export default function AuthModal({ visible, onClose, onAuthSuccess }: Props) {
                   <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
                     {loading
                       ? <ActivityIndicator color="#1b1b1b" />
-                      : <Text style={styles.submitTxt}>{mode === 'signin' ? 'Sign In' : 'Register'}</Text>
+                      : <Text style={styles.submitTxt}>{mode === 'signin' ? 'Iniciar sesión' : 'Registrarse'}</Text>
                     }
                   </TouchableOpacity>
 

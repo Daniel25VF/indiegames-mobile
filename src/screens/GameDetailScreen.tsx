@@ -74,6 +74,7 @@ import type { Game } from '@shared/types/games'
 import { Ionicons } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import ReportModal from '../components/ReportModal'
+import AuthModal from '../components/AuthModal'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 type Props = StackScreenProps<RootStackParams, 'GameDetail'>
@@ -85,9 +86,10 @@ export default function GameDetailScreen({ route, navigation }: Props) {
   const [game, setGame] = useState<Game>(initialGame)
   const [loadingDetail, setLoadingDetail] = useState(true)
   const [slideIndex, setSlideIndex] = useState(0)
-  const { cartItems, ownedGameIds, addToCartLocal, authUser, userId } = useApp()
+  const { cartItems, ownedGameIds, addToCartLocal, authUser, userId, handleAuthSuccess } = useApp()
   const isOwned = ownedGameIds.has(initialGame.id)
   const [reportVisible, setReportVisible] = useState(false)
+  const [authModalVisible, setAuthModalVisible] = useState(false)
 
   const [achievements, setAchievements] = useState<AchievementResponse[]>([])
   const [loadingAchievements, setLoadingAchievements] = useState(false)
@@ -213,25 +215,15 @@ export default function GameDetailScreen({ route, navigation }: Props) {
           {game.genres.length > 0 && (
             <View style={styles.tagsRow}>
               {game.genres.map(g => (
-                <View key={g} style={styles.tag}>
+                <TouchableOpacity
+                  key={g}
+                  style={styles.tag}
+                  onPress={() => navigation.navigate('SearchResults', { query: g })}
+                >
                   <Text style={styles.tagTxt}>{g}</Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
-          )}
-
-          {/* Update banner for library games */}
-          {hasUpdate && releaseBuild && (
-            <TouchableOpacity style={styles.updateBanner} onPress={handleAcknowledgeUpdate}>
-              <View style={styles.updateBannerLeft}>
-                <View style={styles.updateBannerTitleRow}>
-                  <Ionicons name="arrow-up" size={14} color="#2ecc71" />
-                  <Text style={styles.updateBannerTitle}> Actualización disponible</Text>
-                </View>
-                <Text style={styles.updateBannerSub}>Nueva versión: {releaseBuild.versioName}</Text>
-              </View>
-              <Text style={styles.updateBannerBtn}>Actualizar</Text>
-            </TouchableOpacity>
           )}
 
           {/* Purchase box */}
@@ -255,15 +247,16 @@ export default function GameDetailScreen({ route, navigation }: Props) {
                 isOwned ? styles.buyBtnOwned : inCart ? styles.buyBtnInCart : null,
               ]}
               onPress={() => {
-                if (isOwned) navigation.navigate('MainTabs', { screen: 'Library' } as any)
-                else if (!inCart) addToCartLocal(game)
+                if (isOwned) return
+                if (!authUser) { setAuthModalVisible(true); return }
+                if (!inCart) addToCartLocal(game)
               }}
             >
               <View style={styles.buyBtnContent}>
-                {isOwned && <Ionicons name="library-outline" size={14} color="#a78bfa" style={{ marginRight: 6 }} />}
+                {isOwned && <Ionicons name="checkmark-circle" size={14} color="#a78bfa" style={{ marginRight: 6 }} />}
                 {inCart && !isOwned && <Ionicons name="checkmark" size={14} color="#6a9a30" style={{ marginRight: 4 }} />}
                 <Text style={[styles.buyBtnTxt, isOwned ? styles.buyBtnOwnedTxt : inCart ? styles.buyBtnInCartTxt : null]}>
-                  {isOwned ? 'Ver en la biblioteca' : inCart ? 'En el carrito' : 'Añadir al carrito'}
+                  {isOwned ? 'Ya tienes este juego' : inCart ? 'En el carrito' : 'Añadir al carrito'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -340,6 +333,16 @@ export default function GameDetailScreen({ route, navigation }: Props) {
         onClose={() => setReportVisible(false)}
         onSubmit={(reason, description) => {
           console.log('[Report]', { gameId: game.id, reason, description })
+        }}
+      />
+
+      <AuthModal
+        visible={authModalVisible}
+        onClose={() => setAuthModalVisible(false)}
+        onAuthSuccess={(user) => {
+          handleAuthSuccess(user)
+          setAuthModalVisible(false)
+          if (!inCart) addToCartLocal(game)
         }}
       />
     </SafeAreaView>

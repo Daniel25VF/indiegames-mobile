@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   View,
   Text,
@@ -12,9 +12,10 @@ import { useNavigation, useRoute } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { RouteProp } from '@react-navigation/native'
 import type { RootStackParams } from '../navigation'
-import { getGames, mapApiGameListItem } from '@shared/services/api'
+import { getGames, getGenres, mapApiGameListItem } from '@shared/services/api'
 import type { Game } from '@shared/types/games'
 import GameCard from '../components/GameCard'
+import AuthModal from '../components/AuthModal'
 import { useApp } from '../context/AppContext'
 
 type Nav = StackNavigationProp<RootStackParams>
@@ -23,21 +24,51 @@ type Route = RouteProp<RootStackParams, 'SearchResults'>
 export default function SearchResultsScreen() {
   const navigation = useNavigation<Nav>()
   const route = useRoute<Route>()
-  const { query } = route.params
-  const { addToCartLocal } = useApp()
+  const { query, genreId: initialGenreId } = route.params
+  const { addToCartLocal, handleAuthSuccess } = useApp()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
+  const [authModalVisible, setAuthModalVisible] = useState(false)
 
   useEffect(() => {
-    getGames(query, [], 1, 50)
-      .then(page => setGames(page.items.map(mapApiGameListItem)))
-      .catch(() => setGames([]))
-      .finally(() => setLoading(false))
-  }, [query])
+    setLoading(true)
+    setGames([])
+
+    const run = async () => {
+      try {
+        let resolvedGenreId = initialGenreId
+
+        // If no genreId but query might be a genre name, try to resolve it
+        if (!resolvedGenreId) {
+          try {
+            const page = await getGenres(query, 1, 10)
+            const match = page.items.find(
+              g => g.name.toLowerCase() === query.toLowerCase()
+            )
+            if (match) resolvedGenreId = match.id
+          } catch { /* ignore */ }
+        }
+
+        const page = resolvedGenreId
+          ? await getGames('', [resolvedGenreId], 1, 50)
+          : await getGames(query, [], 1, 50)
+
+        setGames(page.items.map(mapApiGameListItem))
+      } catch {
+        setGames([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    run()
+  }, [query, initialGenreId])
 
   const handleSelectGame = (game: Game) => {
     navigation.navigate('GameDetail', { game })
   }
+
+  const isGenreSearch = !!initialGenreId
 
   return (
     <SafeAreaView style={styles.container}>
@@ -45,7 +76,9 @@ export default function SearchResultsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backTxt}>← Volver</Text>
         </TouchableOpacity>
-        <Text style={styles.title} numberOfLines={1}>"{query}"</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {isGenreSearch ? `Género: ${query}` : `"${query}"`}
+        </Text>
       </View>
 
       {loading ? (
@@ -67,13 +100,24 @@ export default function SearchResultsScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <GameCard game={item} onPress={handleSelectGame} onAddToCart={addToCartLocal} />
+            <GameCard
+              game={item}
+              onPress={handleSelectGame}
+              onAddToCart={addToCartLocal}
+              onRequireAuth={() => setAuthModalVisible(true)}
+            />
           )}
           contentContainerStyle={styles.list}
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      <AuthModal
+        visible={authModalVisible}
+        onClose={() => setAuthModalVisible(false)}
+        onAuthSuccess={user => { handleAuthSuccess(user); setAuthModalVisible(false) }}
+      />
     </SafeAreaView>
   )
 }

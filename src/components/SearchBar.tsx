@@ -3,6 +3,7 @@ import { View, TextInput, TouchableOpacity, Text, FlatList, StyleSheet, Image } 
 import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { Game } from '@shared/types/games'
+import type { GenreListItemResponse } from '@shared/services/api'
 
 const HISTORY_KEY = 'searchHistory'
 const MAX_HISTORY = 5
@@ -24,10 +25,20 @@ interface SearchBarProps {
   onChange: (v: string) => void
   onSearch: (v: string) => void
   allGames?: Game[]
+  allGenres?: GenreListItemResponse[]
   onSelectGame?: (game: Game) => void
+  onSelectGenre?: (genre: GenreListItemResponse) => void
 }
 
-export default function SearchBar({ value, onChange, onSearch, allGames = [], onSelectGame }: SearchBarProps) {
+export default function SearchBar({
+  value,
+  onChange,
+  onSearch,
+  allGames = [],
+  allGenres = [],
+  onSelectGame,
+  onSelectGenre,
+}: SearchBarProps) {
   const [focused, setFocused] = useState(false)
   const [history, setHistory] = useState<string[]>([])
 
@@ -35,12 +46,18 @@ export default function SearchBar({ value, onChange, onSearch, allGames = [], on
     if (focused) getHistory().then(setHistory)
   }, [focused])
 
-  const suggestions = value.trim()
-    ? allGames.filter(g => g.title.toLowerCase().includes(value.trim().toLowerCase())).slice(0, 5)
+  const trimmed = value.trim().toLowerCase()
+
+  const gameSuggestions = trimmed
+    ? allGames.filter(g => g.title.toLowerCase().includes(trimmed)).slice(0, 4)
     : []
 
-  const showHistory = focused && !value.trim() && history.length > 0
-  const showSuggestions = focused && suggestions.length > 0
+  const genreSuggestions = trimmed
+    ? allGenres.filter(g => g.name.toLowerCase().includes(trimmed)).slice(0, 3)
+    : []
+
+  const showHistory = focused && !trimmed && history.length > 0
+  const showSuggestions = focused && (gameSuggestions.length > 0 || genreSuggestions.length > 0)
   const showDropdown = showHistory || showSuggestions
 
   const handleSearch = async (q: string) => {
@@ -55,6 +72,13 @@ export default function SearchBar({ value, onChange, onSearch, allGames = [], on
     onSelectGame?.(game)
   }
 
+  const handleSelectGenre = async (genre: GenreListItemResponse) => {
+    await saveToHistory(genre.name)
+    setHistory(await getHistory())
+    setFocused(false)
+    onSelectGenre?.(genre)
+  }
+
   return (
     <View style={styles.wrapper}>
       <View style={[styles.inner, focused && showDropdown && styles.innerOpen]}>
@@ -63,7 +87,7 @@ export default function SearchBar({ value, onChange, onSearch, allGames = [], on
         </TouchableOpacity>
         <TextInput
           style={styles.input}
-          placeholder="Buscar juegos..."
+          placeholder="Buscar juegos o géneros..."
           placeholderTextColor="#666"
           value={value}
           onChangeText={onChange}
@@ -87,10 +111,25 @@ export default function SearchBar({ value, onChange, onSearch, allGames = [], on
               ))}
             </>
           )}
-          {showSuggestions && (
+
+          {genreSuggestions.length > 0 && (
             <>
               {showHistory && <View style={styles.divider} />}
-              {suggestions.map(game => (
+              <Text style={styles.dropLabel}>Géneros</Text>
+              {genreSuggestions.map(genre => (
+                <TouchableOpacity key={genre.id} style={styles.dropItem} onPress={() => handleSelectGenre(genre)}>
+                  <Ionicons name="pricetag-outline" size={13} color="#a78bfa" />
+                  <Text style={styles.genreTxt}>{genre.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
+          {gameSuggestions.length > 0 && (
+            <>
+              {(showHistory || genreSuggestions.length > 0) && <View style={styles.divider} />}
+              <Text style={styles.dropLabel}>Juegos</Text>
+              {gameSuggestions.map(game => (
                 <TouchableOpacity key={game.id} style={styles.dropItem} onPress={() => handleSelectGame(game)}>
                   <Image source={{ uri: game.image }} style={styles.thumb} resizeMode="cover" />
                   <View style={styles.gameInfo}>
@@ -121,6 +160,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#14142a', marginVertical: 4 },
   dropItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8 },
   historyTxt: { fontSize: 13, color: '#ccc', flex: 1, fontFamily: 'Poppins_400Regular' },
+  genreTxt: { fontSize: 13, color: '#a78bfa', flex: 1, fontFamily: 'Poppins_400Regular' },
   thumb: { width: 44, height: 28, borderRadius: 3, backgroundColor: '#1c1c38' },
   gameInfo: { flex: 1, gap: 1 },
   gameTitle: { fontSize: 13, fontWeight: '600', color: '#e0e0e0', fontFamily: 'Poppins_600SemiBold' },

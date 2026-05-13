@@ -8,10 +8,11 @@ interface GameCardProps {
   game: Game
   onPress: (game: Game) => void
   onAddToCart?: (game: Game) => void
+  onRequireAuth?: () => void
 }
 
-export default function GameCard({ game, onPress, onAddToCart }: GameCardProps) {
-  const { ownedGameIds, theme } = useApp()
+export default function GameCard({ game, onPress, onAddToCart, onRequireAuth }: GameCardProps) {
+  const { ownedGameIds, theme, authUser } = useApp()
   const isOwned = ownedGameIds.has(game.id)
   const scale = useRef(new Animated.Value(1)).current
 
@@ -52,7 +53,13 @@ export default function GameCard({ game, onPress, onAddToCart }: GameCardProps) 
                 <Text style={[styles.price, light && styles.priceLight]}>{game.price.toFixed(2)}€</Text>
               )}
               {onAddToCart && (
-                <TouchableOpacity style={styles.cartBtn} onPress={() => onAddToCart(game)}>
+                <TouchableOpacity
+                  style={styles.cartBtn}
+                  onPress={() => {
+                    if (!authUser) { onRequireAuth?.(); return }
+                    onAddToCart(game)
+                  }}
+                >
                   <Text style={styles.cartBtnText}>+</Text>
                 </TouchableOpacity>
               )}
